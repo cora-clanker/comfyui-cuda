@@ -26,19 +26,24 @@ for MODEL_DIRECTORY in ${MODEL_DIRECTORIES[@]}; do
     mkdir -p /opt/comfyui/models/$MODEL_DIRECTORY
 done
 
-# Creates the symlink for the ComfyUI Manager to the custom nodes directory, which is also mounted from the host
+# Creates the symlink for the ComfyUI Manager to the custom nodes directory, which is also mounted from the host.
+# Also removes a legacy 'ComfyUI-Manager' (mixed-case) symlink that older versions of this entrypoint created:
+# custom_nodes is a persistent host volume, so a stale link survives upgrades and would make ComfyUI load
+# Manager twice. Only the lowercase 'comfyui-manager' name lets Manager self-identify for updates.
 echo "Creating symlink for ComfyUI Manager..."
-rm --force /opt/comfyui/custom_nodes/ComfyUI-Manager
+rm --force \
+    /opt/comfyui/custom_nodes/comfyui-manager \
+    /opt/comfyui/custom_nodes/ComfyUI-Manager
 ln -s \
     /opt/comfyui-manager \
-    /opt/comfyui/custom_nodes/ComfyUI-Manager
+    /opt/comfyui/custom_nodes/comfyui-manager
 
 # The custom nodes that were installed using the ComfyUI Manager may have requirements of their own, which are not installed when the container is
 # started for the first time; this loops over all custom nodes and installs the requirements of each custom node
 echo "Installing requirements for custom nodes..."
 for CUSTOM_NODE_DIRECTORY in /opt/comfyui/custom_nodes/*;
 do
-    if [ "$CUSTOM_NODE_DIRECTORY" != "/opt/comfyui/custom_nodes/ComfyUI-Manager" ];
+    if [ "$CUSTOM_NODE_DIRECTORY" != "/opt/comfyui/custom_nodes/comfyui-manager" ];
     then
         if [ -f "$CUSTOM_NODE_DIRECTORY/requirements.txt" ];
         then
@@ -62,7 +67,7 @@ done
 if [ -z "$USER_ID" ] || [ -z "$GROUP_ID" ];
 then
     echo "Running container as $USER..."
-    exec /opt/conda/bin/python main.py \
+    exec /usr/bin/python main.py \
         --port 8188 \
         --listen 0.0.0.0 \
         --disable-auto-launch \
@@ -77,7 +82,7 @@ else
 
     echo "Running container as comfyui-user ($USER_ID:$GROUP_ID)..."
     sudo --set-home --preserve-env=PATH --user \#$USER_ID \
-        /opt/conda/bin/python main.py \
+        /usr/bin/python main.py \
             --port 8188 \
             --listen 0.0.0.0 \
             --disable-auto-launch \

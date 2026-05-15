@@ -4,8 +4,21 @@ name: comfyui-docker
 
 services:
   comfyui:
-    image: ghcr.io/lecode-official/comfyui-docker:${IMAGE_TAG:-latest}
+    build:
+      context: ./source
+      args:
+        COMFYUI_REF: v0.15.0
     container_name: comfyui
+    # Extra ComfyUI args, passed through entrypoint's "$@" to main.py.
+    # Low-VRAM profile for an 11 GB RTX 2080 Ti running Flux.2 Klein:
+    #   fp8 unet + fp8 text encoder roughly halve weight VRAM; --lowvram
+    #   streams the unet from system RAM. Drop --lowvram (or use
+    #   --normalvram) once stable for more speed. If VAE decode still OOMs,
+    #   add "--cpu-vae" here, or use the "VAE Decode (Tiled)" node instead.
+    command:
+      - "--fp8_e4m3fn-unet"
+      - "--fp8_e4m3fn-text-enc"
+      - "--lowvram"
     restart: unless-stopped
     environment:
       USER_ID: "${USER_ID:-1000}"
@@ -16,6 +29,8 @@ services:
       - ${MODELS_PATH:-${HOME}/.comfyui/models}:/opt/comfyui/models:rw
       - ${CUSTOM_NODES_PATH:-${HOME}/.comfyui/custom-nodes}:/opt/comfyui/custom_nodes:rw
       - ${OUTPUT_PATH:-${HOME}/.comfyui/output}:/opt/comfyui/output:rw
+      - ${OUTPUT_PATH:-${HOME}/.comfyui/input}:/opt/comfyui/input:rw
+      - ${OUTPUT_PATH:-${HOME}/.comfyui/user}:/opt/comfyui/user:rw
     deploy:
       resources:
         reservations:
