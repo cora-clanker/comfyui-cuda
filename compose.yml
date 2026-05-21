@@ -28,6 +28,7 @@ services:
     volumes:
       - ${MODELS_PATH:-${HOME}/.comfyui/models}:/opt/comfyui/models:rw
       - ${CUSTOM_NODES_PATH:-${HOME}/.comfyui/custom-nodes}:/opt/comfyui/custom_nodes:rw
+      - /mnt/stuff/git/comfyui-textgen-nodes:/opt/comfyui/custom_nodes/comfyui-textgen-nodes:rw
       - ${OUTPUT_PATH:-${HOME}/.comfyui/output}:/opt/comfyui/output:rw
       - ${OUTPUT_PATH:-${HOME}/.comfyui/input}:/opt/comfyui/input:rw
       - ${OUTPUT_PATH:-${HOME}/.comfyui/user}:/opt/comfyui/user:rw
